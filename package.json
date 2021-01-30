@@ -5,6 +5,7 @@
   "author": "hota1024 <hotalog@hota1024.com>",
   "license": "MIT",
   "dependencies": {
-    "dxn": "^0.0.2"
+    "dxn": "^0.0.2",
+    "ts-node": "^9.1.1"
   }
 }
