@@ -5,6 +5,7 @@ import { codeblock } from './helpers/codeblock'
 type Game = {
   user: User
   startedAt: number
+  message: Message
   onMessage(message: Message): void
 } & {
   type: 'guess'
@@ -32,6 +33,7 @@ export const registerColorGame = (app: App): void => {
 
       const game: Game = {
         type: 'guess',
+        message,
         user: message.author,
         color: chroma.random().hex(),
         startedAt: Date.now(),
@@ -40,27 +42,31 @@ export const registerColorGame = (app: App): void => {
             return
           }
 
-          const color = chroma(ansMsg.content).hex()
-          const embed = new MessageEmbed()
-            .setTitle('答え')
-            .setColor(game.color)
-            .addField(
-              'スコア',
-              codeblock(
-                (100 - chroma.distance(game.color, color)).toFixed(2) + '%'
+          try {
+            const color = chroma(ansMsg.content).hex()
+            const embed = new MessageEmbed()
+              .setTitle('答え')
+              .setColor(game.color)
+              .addField(
+                'スコア',
+                codeblock(
+                  (100 - chroma.distance(game.color, color)).toFixed(2) + '%'
+                )
               )
-            )
-            .addField('答え', codeblock(game.color, 'css'))
-            .addField('あなたの答え', codeblock(color, 'css'))
-            .setImage(
-              `http://placehold.jp/${color.slice(1)}/${color.slice(
-                1
-              )}/256x256.png`
-            )
+              .addField('答え', codeblock(game.color, 'css'))
+              .addField('あなたの答え', codeblock(color, 'css'))
+              .setImage(
+                `http://placehold.jp/${color.slice(1)}/${color.slice(
+                  1
+                )}/256x256.png`
+              )
 
-          ansMsg.reply(embed)
+            ansMsg.reply(embed)
 
-          games = games.filter((g) => g !== game)
+            games = games.filter((g) => g !== game)
+          } catch (e) {
+            ansMsg.reply(`\`${ansMsg.content}\` は色の指定ではありません。`)
+          }
         },
       }
 
@@ -69,7 +75,7 @@ export const registerColorGame = (app: App): void => {
         .setTitle('色当てゲーム')
         .setColor(game.color)
         .setDescription(
-          '画像の色を答えてください（例: `#00aaff`, `red`, `rgb(60, 128, 255)`）'
+          '画像の色を答えてください（例: `#00aaff`, `red`, `rgb(60, 128, 255)`）\n制限時間は100秒です！'
         )
         .setImage(
           `http://placehold.jp/${game.color.slice(1)}/${game.color.slice(
@@ -97,7 +103,9 @@ setInterval(() => {
     const time = Date.now() - game.startedAt
 
     if (time >= 100000) {
-      console.log('remove', game)
+      game.message.reply(
+        `時間切れです！答えは\n${codeblock(game.color)}\nでした！`
+      )
       games = games.filter((g) => g !== game)
     }
   }
